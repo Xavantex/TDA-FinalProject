@@ -1,0 +1,9 @@
+*.bib
+*.aux
+*.bcf
+*.fls
+*.log
+*.out
+*.pdf
+*.xml
+*.fdb_latexmk
