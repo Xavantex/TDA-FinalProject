@@ -1,161 +1,96 @@
-from loadData import loadNatural, loadUrban
-from pathlib import Path
+from typing import Union
+
+from processData import sampleNclosePoints
 import matplotlib.pyplot as plt
 plt.style.use('ggplot')
 
-from scipy.spatial.distance import cdist, pdist, squareform
+from scipy.spatial.distance import pdist, squareform
 import stablerank.srank as sr
-from numpy import shape, min, max, mean, where, argsort, zeros
-from numpy.random import choice
+from numpy import ndarray
 
 from ripser import ripser as rp
 from persim import plot_diagrams
 
-sDir = Path(__file__).parent
 
-urbPath = sDir / Path('./data/urban2012-01-08/velodyne_sync/1326036605234924.bin')
+## visualize points RAW
+def visRAW(nat: ndarray, urb: ndarray):
+    assert nat.shape[0] == (3,)
+    assert urb.shape[0] == (3,)
+    ## Visualize all data, RAW
+    fig = plt.figure()
+    ax = fig.add_subplot(projection='3d')
 
-urb = loadUrban(urbPath)
-#urb = urb[:20000, :]
-# Center the points w.r.t. average
-#urb = urb - urb.mean(axis=0)
-
-# Radii of 4 meter from center
-#surb = urb[:,0]**2 * urb[:,1]**2 < 4
-#urb = urb[surb]
-
-#print("urban", shape(urb))
-#print(urb.max(axis=0))
-#print(urb.min(axis=0))
-
-# choose random point, sort by the closest points and choose the 100 closest points.
-nump = 3
-npoint = 1000
-
-rurb = choice(shape(urb)[0], nump)
-
-curb = zeros((nump, npoint, 3))
-
-for idx, sample in enumerate(rurb):
-    tmp = urb[argsort(cdist(urb, urb[None, sample]).squeeze())]
-    curb[idx] = tmp[:npoint]
+    ax.scatter(urb[:,0], urb[:,1], urb[:,2], marker='o')
+    ax.scatter(nat[:,0], nat[:,1], nat[:,2], marker='^')
+    
+    ax.set_xlabel('X Label')
+    ax.set_ylabel('Y Label')
+    ax.set_zlabel('Z Label')
+    
+    plt.show()
 
 
+def visHN(data: ndarray, name: Union[str, float, int], axs: ndarray=None):
 
-natPath = sDir / Path('./data/outdoorBox_met/box_met_000/box_met_000.xyz')
+    datadist = sr.Distance(squareform(pdist(data, metric="euclidean")))
+    #plot_diagrams(rp(datadist, maxdim=2, distance_matrix=True)['dgms'], show=True)
 
-nat = loadNatural(natPath)
-#nat = nat[:20000, :]
-# Center the points w.r.t. average
-#nat = nat - nat.mean(axis=0)
+    if axs is None:
+        fig, axs = plt.subplots(3, 1)
 
-# Radii of 4 meter from center
-#snat = nat[:,0]**2 * nat[:,1]**2 < 4
-#nat = nat[snat]
-
-#print("natural", shape(nat))
-#print(nat.max(axis=0))
-#print(nat.min(axis=0))
-
-# choose random point, sort by the closest points and choose the 100 closest points.
-
-rnat = choice(shape(nat)[0], nump)
-
-cnat = zeros((nump, npoint, 3))
-
-for idx, sample in enumerate(rnat):
-    tmp = nat[argsort(cdist(nat, nat[None, sample]).squeeze())]
-    cnat[idx] = tmp[:npoint]
-
-
-fig = plt.figure()
-ax = fig.add_subplot(111)
-#ax = fig.add_subplot(projection='3d')
-
-#ax.scatter(urb[:,0], urb[:,1], urb[:,2], marker='o')
-#ax.scatter(nat[:,0], nat[:,1], nat[:,2], marker='^')
-#
-#ax.set_xlabel('X Label')
-#ax.set_ylabel('Y Label')
-#ax.set_zlabel('Z Label')
-#
-#plt.show()
-
-#DURB = sr.Distance(squareform(pdist(urb, metric="euclidean")))
-#DNAT = sr.Distance(squareform(pdist(nat, metric="euclidean")))
-curbdist = []
-for idx, cp in enumerate(curb):
-    curbdist.append(sr.Distance(squareform(pdist(cp, metric="euclidean"))))
-
-cnatdist = []
-for idx, cp in enumerate(cnat):
-    cnatdist.append(sr.Distance(squareform(pdist(cp, metric="euclidean"))))
-
-
-#diagrams = rp(curbdist[0], maxdim=2, thresh= 4, distance_matrix=True)['dgms']
-for idx, cp in enumerate(curbdist):
-    #plot_diagrams(rp(cp, maxdim=2, distance_matrix=True)['dgms'], show=True)
-
+    ## Homo 0
     maxdim = 2
-    burb = cp.get_bc(maxdim=maxdim)
+    bdat = datadist.get_bc(maxdim=maxdim)
 
-    furb = sr.bc_to_sr(burb, degree="H0")
+    fdat = sr.bc_to_sr(bdat, degree="H0")
 
-    purb = furb.plot()
-    purb[0].set_label(f'Urban {idx} H0')
-
-    #furb = sr.bc_to_sr(burb, degree="H1")
-
-    #purb = furb.plot(label=f'Urban {idx} H1')
-    #purb[0].set_label(f'Urban {idx} H1')
+    pdat = fdat.plot(ax=axs[0], label=f'{name} H0')
+    #axs[0].set_label(f'Urban {name} H0')
 
 
-    #furb = sr.bc_to_sr(burb, degree="H2")
+    ## Homo 1
+    fdat = sr.bc_to_sr(bdat, degree="H1")
 
-    #purb = furb.plot(label=f'Urban {idx} H2')
-    #purb[0].set_label(f'Urban {idx} H2')
-
-
-for idx, cp in enumerate(cnatdist):
-    #plot_diagrams(rp(cp, maxdim=2, distance_matrix=True)['dgms'], show=True)
-
-    maxdim = 2
-    bnat = cp.get_bc(maxdim=maxdim)
-
-    fnat = sr.bc_to_sr(bnat, degree="H0")
-
-    pnat = fnat.plot()
-    pnat[0].set_label(f'Natural {idx} H0')
+    pdat = fdat.plot(ax=axs[1], label=f'{name} H1')
+    #axs[1].set_label(f'Urban {name} H1')
 
 
-    #fnat = sr.bc_to_sr(bnat, degree="H1")
+    ## Homo 2
+    fdat = sr.bc_to_sr(bdat, degree="H2")
 
-    #pnat = fnat.plot(label=f'Natural {idx} H1')
-    #pnat[0].set_label(f'Natural {idx} H1')
-
-
-    #fnat = sr.bc_to_sr(bnat, degree="H2")
-
-    #pnat = fnat.plot(label=f'Natural {idx} H2')
-    #pnat[0].set_label(f'Natural {idx} H2')
+    pdat = fdat.plot(ax=axs[2], label=f'{name} H2')
+    #axs[2].set_label()
 
 
-fig.legend()
+## helper func
+def __visRandNPointsHomoLoop(data: Union[ndarray, list], name: Union[str, float, int], axs: ndarray):
 
-plt.show()
-
-
-#clustering_method = "complete"
-#fnat = DNAT.get_h0sr(clustering_method=clustering_method)
-
-#fnat.plot()
+    #diagrams = rp(curbdist[0], maxdim=2, thresh= 4, distance_matrix=True)['dgms']
+    for idx, cp in enumerate(data):
+        visHN(cp, f'{name} {idx}', axs)
 
 
-#ax.scatter(urb[:,0], urb[:,1], urb[:,2], marker='o')
-#ax.scatter(nat[:,0], nat[:,1], nat[:,2], marker='^')
+## Create homology from x sampled closest points
+def visRandNPointsHomo(nat: Union[ndarray, list], urb: Union[ndarray, list]):
+    ## choose random point, sort by the closest points and choose the 100 closest points.
+    fig, axs = plt.subplots(3, 1)
 
-#ax.set_xlabel('X Label')
-#ax.set_ylabel('Y Label')
-#ax.set_zlabel('Z Label')
+    __visRandNPointsHomoLoop(urb, "Urban", axs)
 
-#plt.show()
+    __visRandNPointsHomoLoop(nat, "Natural", axs)
+
+    #fig.legend()
+    for ax in axs:
+        ax.legend()
+    plt.show()
+
+
+def visH0sr(data: ndarray):
+    ## Create matrix distance
+    DDAT = sr.Distance(squareform(pdist(data, metric="euclidean")))
+
+    ## anoter stablerank method for H0 homo
+    clustering_method = "complete"
+    fnat = DDAT.get_h0sr(clustering_method=clustering_method)
+
+    fnat.plot()

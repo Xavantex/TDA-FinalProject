@@ -30,5 +30,6 @@ setuptools.setup(
         'pandas==2.0.3',
         'ipywidgets==8.1.1',
         'matplotlib==3.7.3',
+        'wget==3.2',
     ]
 )
