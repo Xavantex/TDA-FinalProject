@@ -31,5 +31,7 @@ setuptools.setup(
         'ipywidgets==8.1.1',
         'matplotlib==3.7.3',
         'wget==3.2',
+        'torch==2.1.1+cpu',
+        'torcheval==0.0.7',
     ]
 )

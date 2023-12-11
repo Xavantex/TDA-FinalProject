@@ -21,7 +21,6 @@ def radiiFilter(data: ndarray, radii: float):
 
 ## randomly sample number of points
 def xSamples(data: ndarray, numPoints: int):
-    assert shape(data)[1:] == (3,)
 
     return data[choice(shape(data)[0], numPoints)]
 
@@ -47,14 +46,14 @@ def sampleNclosePoints(data: ndarray, numPoints: int, closePoints: int):
 def sectionData(data: ndarray, sects: int, minimum: float=None, maximum: float=None):
     datashape = shape(data)
 
-    assert datashape[1:] == (3,)
+    assert datashape[1] == 3
 
     if maximum is None:
         maximum = max(data[:,2])
     if minimum is None:
         minimum = min(data[:,2])
 
-    dstep = maximum - minimum / float(sects)
+    dstep = (maximum - minimum) / float(sects)
 
     parts = arange(minimum, maximum, dstep)
 
